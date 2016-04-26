@@ -11,8 +11,8 @@ struct BHeap {
 
 /* initialize, destroy, resize
  ******************************************************************************/
-inline struct BHeap *init_sized_bheap(const size_t size,
-				      const size_t width,
+inline struct BHeap *init_sized_bheap(const size_t width,
+				      const size_t size,
 				      int (*compare)(const void *,
 						     const void *))
 {
@@ -69,19 +69,19 @@ inline void realloc_bheap(struct BHeap *heap,
 
 /* insertion
  ******************************************************************************/
-void do_insert(void *nodes,
-	       void *next,
+void do_insert(void *const nodes,
+	       void *const next,
 	       const size_t width,
-	       const ptrdiff_t next_i,
+	       const ptrdiff_t i_next,
 	       int (*compare)(const void *,
 			      const void *));
 
 void bheap_insert_array(struct BHeap *heap,
-			void *array,
+			void *const array,
 			const size_t length);
 
 inline void bheap_insert(struct BHeap *heap,
-			 void *next)
+			 void *const next)
 {
 	++(heap->count);
 
@@ -98,11 +98,11 @@ inline void bheap_insert(struct BHeap *heap,
  ******************************************************************************/
 void *bheap_extract(struct BHeap *heap);
 
-void do_shift(void *nodes,
-	      void *next,
+void do_shift(void *const nodes,
+	      void *const next,
 	      const size_t width,
-	      const ptrdiff_t next_i,
-	      const ptrdiff_t base_i,
+	      const ptrdiff_t i_next,
+	      const ptrdiff_t i_base,
 	      int (*compare)(const void *,
 			     const void *));
 
@@ -118,28 +118,28 @@ void print_bheap(struct BHeap *heap,
 
 /* heapsort
  ******************************************************************************/
-void sort_bheap_nodes(void *nodes,
-		      const size_t width,
+void sort_bheap_nodes(void *const nodes,
 		      const size_t length,
+		      const size_t width,
 		      int (*compare)(const void *,
 				     const void *));
 
-inline void bheap_sort(void *array,
-		       const size_t width,
+inline void bheap_sort(void *const array,
 		       const size_t length,
+		       const size_t width,
 		       int (*compare)(const void *,
 				      const void *))
 {
-	sort_bheap_nodes(&array[-1l], width, length, compare);
+	sort_bheap_nodes(&array[-1l], length, width, compare);
 }
 
 
 
 /* convienience, misc
  ******************************************************************************/
-inline struct BHeap *array_into_bheap(void *array,
-				      const size_t width,
+inline struct BHeap *array_into_bheap(void *const array,
 				      const size_t length,
+				      const size_t width,
 				      int (*compare)(const void *,
 						     const void *))
 {
@@ -152,11 +152,11 @@ inline struct BHeap *array_into_bheap(void *array,
 	memcpy(nodes, array, array_size);
 
 	/* sentinel node at index 0 */
-	nodes = &nodes[-1l];
+	--nodes;
 
 	sort_bheap_nodes(nodes, width, length, compare);
 
-	heap->nodes   = (void *) nodes;
+	heap->nodes   = nodes;
 	heap->count   = length;
 	heap->alloc   = length;
 	heap->compare = compare;
