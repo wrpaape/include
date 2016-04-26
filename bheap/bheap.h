@@ -50,7 +50,7 @@ inline struct BHeap *init_bheap_from_array(void **array,
 inline struct BHeap *init_bheap(int (*compare)(const void *,
 					       const void *))
 {
-	return init_sized_bheap(compare, 1ul);
+	return init_sized_bheap(1ul, compare);
 }
 
 
@@ -75,6 +75,7 @@ inline void resize_bheap(struct BHeap *heap,
 				"from %lu to %lu",
 				heap->alloc, size);
 
+
 	heap->nodes = nodes - 1l;
 	heap->alloc = size;
 }
@@ -98,10 +99,10 @@ inline void bheap_insert(struct BHeap *heap,
 {
 	++(heap->count);
 
-	do_insert(heap->nodes, next, heap->count, heap->compare);
-
 	if (heap->count == heap->alloc)
 		resize_bheap(heap, heap->alloc * 2ul);
+
+	do_insert(heap->nodes, next, heap->count, heap->compare);
 }
 
 

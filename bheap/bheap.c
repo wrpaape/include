@@ -86,17 +86,13 @@ void *bheap_extract(struct BHeap *heap)
 	if (heap->count == 0ul)
 		return NULL;
 
-	const size_t base_i = heap->count;
+	void **nodes = heap->nodes;
+	void *root   = nodes[1ul];
+	void *base   = nodes[heap->count];
 
 	--(heap->count);
 
-
-
-	void **nodes = heap->nodes;
-	void *root   = nodes[1ul];
-	void *base   = nodes[base_i];
-
-	do_shift(nodes, base, 1ul, base_i - 1ul, heap->compare);
+	do_shift(nodes, base, 1ul, heap->count, heap->compare);
 
 	return root;
 }
@@ -205,7 +201,7 @@ void print_bheap(struct BHeap *heap,
 	void **nodes = heap->nodes;
 	char buffer[256];
 
-	for (size_t i = 1ul; i < count; ++i) {
+	for (size_t i = 1ul; i <= count; ++i) {
 		node_to_string(buffer, nodes[i]);
 		printf("nodes[%zu]:\n%s\n", i, buffer);
 	}
