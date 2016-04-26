@@ -1,4 +1,4 @@
-#include "rand.h"
+#include <utils/rand.h>
 #include <stddef.h> /* ptrdiff_t */
 #include <string.h> /* memcpy */
 

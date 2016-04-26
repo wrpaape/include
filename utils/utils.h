@@ -52,5 +52,12 @@ do {									\
 } while (0)
 
 /* FUNCTION-LIKE MACROS ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
+
+inline size_t next_pow_two(const size_t num)
+{
+	return 1lu << (BIT_SIZE(size_t) - __builtin_clzl(num - 1lu));
+}
+
+
 #endif /* ifndef UTILS_UTILS_H_ */
 
