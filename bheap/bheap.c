@@ -53,27 +53,27 @@ void bheap_insert_array(struct BHeap *heap,
 
 void do_insert(void **nodes,
 	       void *next,
-	       const size_t next_i,
+	       const ptrdiff_t i_next,
 	       int (*compare)(const void *,
 			      const void *))
 {
 	/* sentinel node has been reached, 'next' is new root node */
-	if (next_i == 1ul) {
-		nodes[1ul] = next;
+	if (i_next == 1l) {
+		nodes[1l] = next;
 		return;
 	}
 
 
-	const size_t parent_i = next_i / 2ul;
-	void *parent	      = nodes[parent_i];
+	const ptrdiff_t i_parent = i_next / 2l;
+	void *parent = nodes[i_parent];
 
 	if (compare(parent, next)) {
-		nodes[next_i] = next;
+		nodes[i_next] = next;
 		return;
 	}
 
-	nodes[next_i] = parent;
-	do_insert(nodes, next, parent_i, compare);
+	nodes[i_next] = parent;
+	do_insert(nodes, next, i_parent, compare);
 }
 
 
@@ -87,36 +87,36 @@ void *bheap_extract(struct BHeap *heap)
 		return NULL;
 
 	void **nodes = heap->nodes;
-	void *root   = nodes[1ul];
+	void *root   = nodes[1l];
 	void *base   = nodes[heap->count];
 
 	--(heap->count);
 
-	do_shift(nodes, base, 1ul, heap->count, heap->compare);
+	do_shift(nodes, base, 1l, heap->count, heap->compare);
 
 	return root;
 }
 
 void do_shift(void **nodes,
 	      void *next,
-	      const size_t next_i,
-	      const size_t base_i,
+	      const ptrdiff_t i_next,
+	      const ptrdiff_t i_base,
 	      int (*compare)(const void *,
 			     const void *))
 {
 
-	const size_t lchild_i = next_i * 2ul;
+	const ptrdiff_t i_lchild = i_next * 2l;
 
 	/* if base level of heap has been reached (no more children), replace
 	 **********************************************************************/
-	if (lchild_i > base_i) {
-		nodes[next_i] = next;
+	if (i_lchild > i_base) {
+		nodes[i_next] = next;
 		return;
 	}
 
-	const size_t rchild_i = lchild_i + 1ul;
+	const ptrdiff_t i_rchild = i_lchild + 1l;
 
-	void *lchild = nodes[lchild_i];
+	void *lchild = nodes[i_lchild];
 
 	/* compare left child with 'next':
 	 *
@@ -127,31 +127,31 @@ void do_shift(void **nodes,
 		/* if base level of heap has been reached (no more children),
 		 * place 'next' below 'lchild' and return
 		 **************************************************************/
-		if (rchild_i > base_i) {
-			nodes[lchild_i] = next;
-			nodes[next_i]	= lchild;
+		if (i_rchild > i_base) {
+			nodes[i_lchild] = next;
+			nodes[i_next]	= lchild;
 			return;
 		}
 
-		void *rchild = nodes[rchild_i];
+		void *rchild = nodes[i_rchild];
 
 		/* compare left child with right child:
 		 *
 		 * if 'lchild' belongs above 'rchild'...
 		 **************************************************************/
 		if (compare(lchild, rchild)) {
-			/* place 'lchild' at 'next_i' and continue recursion
+			/* place 'lchild' at 'i_next' and continue recursion
 			 * down left branch
 			 ******************************************************/
-			nodes[next_i] = lchild;
-			do_shift(nodes, next, lchild_i, base_i, compare);
+			nodes[i_next] = lchild;
+			do_shift(nodes, next, i_lchild, i_base, compare);
 
 		} else {
-			/* place 'rchild' at 'next_i' and continue recursion
+			/* place 'rchild' at 'i_next' and continue recursion
 			 * down right branch
 			 ******************************************************/
-			nodes[next_i] = rchild;
-			do_shift(nodes, next, rchild_i, base_i, compare);
+			nodes[i_next] = rchild;
+			do_shift(nodes, next, i_rchild, i_base, compare);
 		}
 		return;
 	}
@@ -159,27 +159,27 @@ void do_shift(void **nodes,
 	/* if base level of heap has been reached (no more children), place
 	 * 'next' above 'lchild' (new base/last element) and return
 	 **********************************************************************/
-	if (rchild_i > base_i) {
-		nodes[next_i] = next;
+	if (i_rchild > i_base) {
+		nodes[i_next] = next;
 		return;
 	}
 
-	void *rchild = nodes[rchild_i];
+	void *rchild = nodes[i_rchild];
 
 	/* compare 'next' with right child:
 	 *
 	 * if 'rchild' belongs above 'next'...
 	 **********************************************************************/
 	if (compare(rchild, next)) {
-		nodes[next_i] = rchild;
-		do_shift(nodes, next, rchild_i, base_i, compare);
+		nodes[i_next] = rchild;
+		do_shift(nodes, next, i_rchild, i_base, compare);
 		return;
 	}
 
-	/* otherwise, 'next' belongs above lchild and rchild: place at 'next_i'
+	/* otherwise, 'next' belongs above lchild and rchild: place at 'i_next'
 	 * and return
 	 **********************************************************************/
-	nodes[next_i] = next;
+	nodes[i_next] = next;
 }
 
 
@@ -217,7 +217,15 @@ void bheap_sort(void **array,
 		int (*compare)(const void *,
 			       const void *))
 {
-	return;
+	void **const nodes = &array[-1];
+	ptrdiff_t i = length;
+	void *next;
+
+	while (i > 1l) {
+		next = nodes[i];
+		--i;
+		do_shift(nodes, next, i, length, compare);
+	}
 }
 
 

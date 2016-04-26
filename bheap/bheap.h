@@ -39,7 +39,7 @@ inline struct BHeap *init_bheap_from_array(void **array,
 	HANDLE_MALLOC(heap, sizeof(struct BHeap));
 
 	/* sentinel node at index 0 in */
-	heap->nodes   = array - 1l;
+	heap->nodes   = &array[-1l];
 	heap->count   = length;
 	heap->alloc   = length;
 	heap->compare = compare;
@@ -75,8 +75,7 @@ inline void resize_bheap(struct BHeap *heap,
 				"from %lu to %lu",
 				heap->alloc, size);
 
-
-	heap->nodes = nodes - 1l;
+	heap->nodes = &nodes[-1l];
 	heap->alloc = size;
 }
 
@@ -86,7 +85,7 @@ inline void resize_bheap(struct BHeap *heap,
  ******************************************************************************/
 void do_insert(void **nodes,
 	       void *next,
-	       const size_t next_i,
+	       const ptrdiff_t next_i,
 	       int (*compare)(const void *,
 			      const void *));
 
@@ -114,8 +113,8 @@ void *bheap_extract(struct BHeap *heap);
 
 void do_shift(void **nodes,
 	      void *next,
-	      const size_t next_i,
-	      const size_t base_i,
+	      const ptrdiff_t next_i,
+	      const ptrdiff_t base_i,
 	      int (*compare)(const void *,
 			     const void *));
 
