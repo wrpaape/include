@@ -92,18 +92,19 @@ void *bheap_extract(struct BHeap *heap)
 
 	--(heap->count);
 
-	do_shift(nodes, base, heap->width, 1l, heap->count, heap->compare);
+	do_bheap_shift(nodes, base, heap->width,
+		       1l, heap->count, heap->compare);
 
 	return root;
 }
 
-void do_shift(void *const nodes,
-	      void *const next,
-	      const size_t width,
-	      const ptrdiff_t i_next,
-	      const ptrdiff_t i_base,
-	      int (*compare)(const void *,
-			     const void *))
+void do_bheap_shift(void *const restrict nodes,
+		    void *const restrict next,
+		    const size_t width,
+		    const ptrdiff_t i_next,
+		    const ptrdiff_t i_base,
+		    int (*compare)(const void *,
+				   const void *))
 {
 
 	const ptrdiff_t i_lchild = i_next * 2l;
@@ -118,7 +119,7 @@ void do_shift(void *const nodes,
 
 	const ptrdiff_t i_rchild = i_lchild + 1l;
 
-	void *const lchild = &nodes[i_lchild];
+	void *const restrict lchild = &nodes[i_lchild];
 
 	/* compare left child with 'next':
 	 *
@@ -137,7 +138,7 @@ void do_shift(void *const nodes,
 			return;
 		}
 
-		void *const rchild = &nodes[i_rchild];
+		void *const restrict rchild = &nodes[i_rchild];
 
 		/* compare left child with right child:
 		 *
@@ -149,7 +150,8 @@ void do_shift(void *const nodes,
 			 ******************************************************/
 			/* nodes[i_next] = lchild; */
 			memcpy(&nodes[i_next], lchild, width);
-			do_shift(nodes, next, width, i_lchild, i_base, compare);
+			do_bheap_shift(nodes, next, width,
+				       i_lchild, i_base, compare);
 
 		} else {
 			/* place 'rchild' at 'i_next' and continue recursion
@@ -157,7 +159,8 @@ void do_shift(void *const nodes,
 			 ******************************************************/
 			/* nodes[i_next] = rchild; */
 			memcpy(&nodes[i_next], rchild, width);
-			do_shift(nodes, next, width, i_rchild, i_base, compare);
+			do_bheap_shift(nodes, next, width,
+				       i_rchild, i_base, compare);
 		}
 		return;
 	}
@@ -180,7 +183,7 @@ void do_shift(void *const nodes,
 	if (compare(rchild, next)) {
 		/* nodes[i_next] = rchild; */
 		memcpy(&nodes[i_next], rchild, width);
-		do_shift(nodes, next, width, i_rchild, i_base, compare);
+		do_bheap_shift(nodes, next, width, i_rchild, i_base, compare);
 		return;
 	}
 
@@ -239,7 +242,7 @@ void sort_bheap_nodes(void *const nodes,
 	while (i > 1l) {
 		next = &nodes[i];
 		--i;
-		do_shift(nodes, next, width, i, length, compare);
+		do_bheap_shift(nodes, next, width, i, length, compare);
 	}
 }
 

@@ -98,13 +98,13 @@ inline void bheap_insert(struct BHeap *heap,
  ******************************************************************************/
 void *bheap_extract(struct BHeap *heap);
 
-void do_shift(void *const nodes,
-	      void *const next,
-	      const size_t width,
-	      const ptrdiff_t i_next,
-	      const ptrdiff_t i_base,
-	      int (*compare)(const void *,
-			     const void *));
+void do_bheap_shift(void *const restrict nodes,
+		    void *const restrict next,
+		    const size_t width,
+		    const ptrdiff_t i_next,
+		    const ptrdiff_t i_base,
+		    int (*compare)(const void *,
+				   const void *));
 
 
 /* display
