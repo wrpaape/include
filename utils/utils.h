@@ -63,9 +63,9 @@ inline void mem_swap(void *restrict x,
 		     const size_t width)
 {
 	char buffer[width];
-	memcpy(&buf[0l], x,	   width);
-	memcpy(x,	 y,	   width);
-	memcpy(y,	 &buf[0l], width);
+	memcpy(&buffer[0l], x,		 width);
+	memcpy(x,	    y,		 width);
+	memcpy(y,	    &buffer[0l], width);
 }
 #endif /* ifndef UTILS_UTILS_H_ */
 

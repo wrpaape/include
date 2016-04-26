@@ -3,14 +3,16 @@
 
 /* initialize, destroy, resize
  ******************************************************************************/
-extern inline struct BHeap *init_bheap(int (*compare)(const void *,
+extern inline struct BHeap *init_bheap(const size_t width,
+				       int (*compare)(const void *,
 						      const void *));
 
 extern inline struct BHeap *init_sized_bheap(const size_t size,
+					     const size_t width,
 					     int (*compare)(const void *,
 							    const void *));
 
-extern inline struct BHeap *init_bheap_from_array(void **array,
+extern inline struct BHeap *init_bheap_from_array(void *array,
 						  const size_t length,
 						  int (*compare)(const void *,
 								 const void *));
@@ -18,8 +20,8 @@ extern inline struct BHeap *init_bheap_from_array(void **array,
 extern inline void free_bheap(struct BHeap *heap);
 
 
-extern inline void resize_bheap(struct BHeap *heap,
-				const size_t size);
+extern inline void realloc_bheap(struct BHeap *heap,
+				 const size_t size);
 
 
 
@@ -29,51 +31,56 @@ extern inline void bheap_insert(struct BHeap *heap,
 				void *next);
 
 void bheap_insert_array(struct BHeap *heap,
-			void **array,
+			void *array,
 			const size_t length)
 {
 	const size_t count = heap->count;
+	const size_t width = heap->width;
 	const size_t next_count = count + length;
 
 	if (heap->alloc < next_count)
-		resize_bheap(heap, next_pow_two(next_count));
+		realloc_bheap(heap, next_pow_two(next_count));
 
-	void **nodes = heap->nodes;
+	void *nodes = heap->nodes;
 	int (*compare)(const void *,
 		       const void *) = heap->compare;
 
 
 	for (size_t i = 0ul; i < length; ++i)
-		do_insert(nodes, array[i], count + i, compare);
+		do_insert(nodes, &array[i], count + i, width, compare);
 
 	heap->count = next_count;
 }
 
 
 
-void do_insert(void **nodes,
+void do_insert(void *nodes,
 	       void *next,
+	       const size_t width,
 	       const ptrdiff_t i_next,
 	       int (*compare)(const void *,
 			      const void *))
 {
 	/* sentinel node has been reached, 'next' is new root node */
 	if (i_next == 1l) {
-		nodes[1l] = next;
+		/* nodes[1l] = next; */
+		memcpy(&nodes[1l], next, width);
 		return;
 	}
 
 
 	const ptrdiff_t i_parent = i_next / 2l;
-	void *parent = nodes[i_parent];
+	void *parent = &nodes[i_parent];
 
 	if (compare(parent, next)) {
-		nodes[i_next] = next;
+		/* nodes[i_next] = next; */
+		memcpy(&nodes[i_next], next, width);
 		return;
 	}
 
-	nodes[i_next] = parent;
-	do_insert(nodes, next, i_parent, compare);
+	/* nodes[i_next] = parent; */
+	memcpy(&nodes[i_next], parent, width);
+	do_insert(nodes, next, width, i_parent, compare);
 }
 
 
@@ -86,19 +93,20 @@ void *bheap_extract(struct BHeap *heap)
 	if (heap->count == 0ul)
 		return NULL;
 
-	void **nodes = heap->nodes;
-	void *root   = nodes[1l];
-	void *base   = nodes[heap->count];
+	void *const nodes = heap->nodes;
+	void *const root  = &nodes[1l];
+	void *const base  = &nodes[heap->count];
 
 	--(heap->count);
 
-	do_shift(nodes, base, 1l, heap->count, heap->compare);
+	do_shift(nodes, base, 1l, heap->count, heap->width, heap->compare);
 
 	return root;
 }
 
-void do_shift(void **nodes,
+void do_shift(void *nodes,
 	      void *next,
+	      const size_t width,
 	      const ptrdiff_t i_next,
 	      const ptrdiff_t i_base,
 	      int (*compare)(const void *,
@@ -110,13 +118,14 @@ void do_shift(void **nodes,
 	/* if base level of heap has been reached (no more children), replace
 	 **********************************************************************/
 	if (i_lchild > i_base) {
-		nodes[i_next] = next;
+		memcpy(&nodes[i_next], next, width);
+		/* nodes[i_next] = next; */
 		return;
 	}
 
 	const ptrdiff_t i_rchild = i_lchild + 1l;
 
-	void *lchild = nodes[i_lchild];
+	void *lchild = &nodes[i_lchild];
 
 	/* compare left child with 'next':
 	 *
@@ -128,12 +137,14 @@ void do_shift(void **nodes,
 		 * place 'next' below 'lchild' and return
 		 **************************************************************/
 		if (i_rchild > i_base) {
-			nodes[i_lchild] = next;
-			nodes[i_next]	= lchild;
+			memcpy(&nodes[i_lchild], next,   width);
+			memcpy(&nodes[i_next],   lchild, width);
+			/* nodes[i_lchild] = next; */
+			/* nodes[i_next]	= lchild; */
 			return;
 		}
 
-		void *rchild = nodes[i_rchild];
+		void *rchild = &nodes[i_rchild];
 
 		/* compare left child with right child:
 		 *
@@ -143,15 +154,17 @@ void do_shift(void **nodes,
 			/* place 'lchild' at 'i_next' and continue recursion
 			 * down left branch
 			 ******************************************************/
-			nodes[i_next] = lchild;
-			do_shift(nodes, next, i_lchild, i_base, compare);
+			/* nodes[i_next] = lchild; */
+			memcpy(&nodes[i_next], lchild, width);
+			do_shift(nodes, next, width, i_lchild, i_base, compare);
 
 		} else {
 			/* place 'rchild' at 'i_next' and continue recursion
 			 * down right branch
 			 ******************************************************/
-			nodes[i_next] = rchild;
-			do_shift(nodes, next, i_rchild, i_base, compare);
+			/* nodes[i_next] = rchild; */
+			memcpy(&nodes[i_next], rchild, width);
+			do_shift(nodes, next, width, i_rchild, i_base, compare);
 		}
 		return;
 	}
@@ -160,26 +173,29 @@ void do_shift(void **nodes,
 	 * 'next' above 'lchild' (new base/last element) and return
 	 **********************************************************************/
 	if (i_rchild > i_base) {
-		nodes[i_next] = next;
+		/* nodes[i_next] = next; */
+		memcpy(&nodes[i_next], next, width);
 		return;
 	}
 
-	void *rchild = nodes[i_rchild];
+	void *rchild = &nodes[i_rchild];
 
 	/* compare 'next' with right child:
 	 *
 	 * if 'rchild' belongs above 'next'...
 	 **********************************************************************/
 	if (compare(rchild, next)) {
-		nodes[i_next] = rchild;
-		do_shift(nodes, next, i_rchild, i_base, compare);
+		/* nodes[i_next] = rchild; */
+		memcpy(&nodes[i_next], rchild, width);
+		do_shift(nodes, next, width, i_rchild, i_base, compare);
 		return;
 	}
 
 	/* otherwise, 'next' belongs above lchild and rchild: place at 'i_next'
 	 * and return
 	 **********************************************************************/
-	nodes[i_next] = next;
+	/* nodes[i_next] = next; */
+	memcpy(&nodes[i_next], next, width);
 }
 
 
@@ -198,11 +214,11 @@ void print_bheap(struct BHeap *heap,
 		return;
 	}
 
-	void **nodes = heap->nodes;
+	void *nodes = heap->nodes;
 	char buffer[256];
 
 	for (size_t i = 1ul; i <= count; ++i) {
-		node_to_string(buffer, nodes[i]);
+		node_to_string(buffer, &nodes[i]);
 		printf("nodes[%zu]:\n%s\n", i, buffer);
 	}
 }
@@ -212,26 +228,32 @@ void print_bheap(struct BHeap *heap,
 
 /* heapsort
  ******************************************************************************/
-void bheap_sort(void **array,
-		const size_t length,
-		int (*compare)(const void *,
-			       const void *))
+extern inline void bheap_sort(void *array,
+			      const size_t width,
+			      const size_t length,
+			      int (*compare)(const void *,
+					     const void *));
+
+void sort_bheap_nodes(void *nodes,
+		      const size_t width,
+		      const size_t length,
+		      int (*compare)(const void *,
+				     const void *))
 {
-	void **const nodes = &array[-1];
 	ptrdiff_t i = length;
 	void *next;
 
 	while (i > 1l) {
-		next = nodes[i];
+		next = &nodes[i];
 		--i;
-		do_shift(nodes, next, i, length, compare);
+		do_shift(nodes, next, width, i, length, compare);
 	}
 }
 
 
 /* convienience, misc
  ******************************************************************************/
-extern inline struct BHeap *array_into_bheap(void **array,
+extern inline struct BHeap *array_into_bheap(void *array,
 					     const size_t width,
 					     const size_t length,
 					     int (*compare)(const void *,

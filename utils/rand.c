@@ -1,5 +1,6 @@
 #include <stddef.h> /* ptrdiff_t */
 #include <string.h> /* memcpy */
+#include <utils/rand.h>
 
 extern inline void init_rng(void);
 

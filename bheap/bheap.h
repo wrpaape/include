@@ -1,9 +1,10 @@
 #ifndef BHEAP_BHEAP_H_
 #define BHEAP_BHEAP_H_
 struct BHeap {
-	size_t count;
-	size_t alloc;
-	void **nodes;
+	size_t count;	/* count of occupied nodes */
+	size_t alloc;	/* count of allocated nodes */
+	size_t width;	/* byte size per node */
+	void *nodes;
 	int (*compare)(const void *,
 		       const void *);
 };
@@ -11,46 +12,31 @@ struct BHeap {
 /* initialize, destroy, resize
  ******************************************************************************/
 inline struct BHeap *init_sized_bheap(const size_t size,
+				      const size_t width,
 				      int (*compare)(const void *,
 						     const void *))
 {
 	struct BHeap *heap;
 
 	HANDLE_MALLOC(heap, sizeof(struct BHeap));
-	HANDLE_MALLOC(heap->nodes, sizeof(void *) * size);
+	HANDLE_MALLOC(heap->nodes, size);
 
 	/* sentinel node at index 0 in */
 	--(heap->nodes);
 
 	heap->count   = 0ul;
 	heap->alloc   = size;
+	heap->width   = width;
 	heap->compare = compare;
 
 	return heap;
 }
 
-inline struct BHeap *init_bheap_from_array(void **array,
-					   const size_t length,
-					   int (*compare)(const void *,
-							  const void *))
-{
-	struct BHeap *heap;
-
-	HANDLE_MALLOC(heap, sizeof(struct BHeap));
-
-	/* sentinel node at index 0 in */
-	heap->nodes   = &array[-1l];
-	heap->count   = length;
-	heap->alloc   = length;
-	heap->compare = compare;
-
-	return heap;
-}
-
-inline struct BHeap *init_bheap(int (*compare)(const void *,
+inline struct BHeap *init_bheap(const size_t width,
+				int (*compare)(const void *,
 					       const void *))
 {
-	return init_sized_bheap(1ul, compare);
+	return init_sized_bheap(width, width, compare);
 }
 
 
@@ -65,32 +51,33 @@ inline void free_bheap(struct BHeap *heap)
 	free(heap);
 }
 
-inline void resize_bheap(struct BHeap *heap,
-			 const size_t size)
+inline void realloc_bheap(struct BHeap *heap,
+			  const size_t alloc)
 {
-	void **nodes = realloc(&heap->nodes[1l], sizeof(void *) * size);
+	void *nodes = realloc(&heap->nodes[1l], heap->width * alloc);
 
 	if (nodes == NULL)
 		EXIT_ON_FAILURE("failed to reallocate number of nodes"
 				"from %lu to %lu",
-				heap->alloc, size);
+				heap->alloc, alloc);
 
 	heap->nodes = &nodes[-1l];
-	heap->alloc = size;
+	heap->alloc = alloc;
 }
 
 
 
 /* insertion
  ******************************************************************************/
-void do_insert(void **nodes,
+void do_insert(void *nodes,
 	       void *next,
+	       const size_t width,
 	       const ptrdiff_t next_i,
 	       int (*compare)(const void *,
 			      const void *));
 
 void bheap_insert_array(struct BHeap *heap,
-			void **array,
+			void *array,
 			const size_t length);
 
 inline void bheap_insert(struct BHeap *heap,
@@ -99,9 +86,9 @@ inline void bheap_insert(struct BHeap *heap,
 	++(heap->count);
 
 	if (heap->count == heap->alloc)
-		resize_bheap(heap, heap->alloc * 2ul);
+		realloc_bheap(heap, heap->alloc * 2ul);
 
-	do_insert(heap->nodes, next, heap->count, heap->compare);
+	do_insert(heap->nodes, next, heap->count, heap->width, heap->compare);
 }
 
 
@@ -111,8 +98,9 @@ inline void bheap_insert(struct BHeap *heap,
  ******************************************************************************/
 void *bheap_extract(struct BHeap *heap);
 
-void do_shift(void **nodes,
+void do_shift(void *nodes,
 	      void *next,
+	      const size_t width,
 	      const ptrdiff_t next_i,
 	      const ptrdiff_t base_i,
 	      int (*compare)(const void *,
@@ -130,31 +118,50 @@ void print_bheap(struct BHeap *heap,
 
 /* heapsort
  ******************************************************************************/
-void bheap_sort(void **array,
-		const size_t length,
-		int (*compare)(const void *,
-			       const void *));
+void sort_bheap_nodes(void *nodes,
+		      const size_t width,
+		      const size_t length,
+		      int (*compare)(const void *,
+				     const void *));
+
+inline void bheap_sort(void *array,
+		       const size_t width,
+		       const size_t length,
+		       int (*compare)(const void *,
+				      const void *))
+{
+	sort_bheap_nodes(&array[-1l], width, length, compare);
+}
 
 
 
 /* convienience, misc
  ******************************************************************************/
-inline struct BHeap *array_into_bheap(void **array,
+inline struct BHeap *array_into_bheap(void *array,
 				      const size_t width,
 				      const size_t length,
 				      int (*compare)(const void *,
 						     const void *))
 {
 	const size_t array_size = width * length;
-	void **nodes;
+	struct BHeap *heap;
+	void *nodes;
 
+	HANDLE_MALLOC(heap, sizeof(struct BHeap));
 	HANDLE_MALLOC(nodes, array_size);
-
 	memcpy(nodes, array, array_size);
 
-	bheap_sort(nodes, length, compare);
+	/* sentinel node at index 0 */
+	nodes = &nodes[-1l];
 
-	return init_bheap_from_array(nodes, length, compare);
+	sort_bheap_nodes(nodes, width, length, compare);
+
+	heap->nodes   = (void *) nodes;
+	heap->count   = length;
+	heap->alloc   = length;
+	heap->compare = compare;
+
+	return heap;
 
 }
 #endif /* ifndef BHEAP_BHEAP_H_ */
